@@ -1,12 +1,14 @@
 """Offline release tests; no GPU, model download, or server required."""
 from __future__ import annotations
 import ast
-import base64
-from io import BytesIO
 import json
 from pathlib import Path
+import subprocess
+import tempfile
 import unittest
-from zipfile import ZipFile
+from unittest import mock
+
+from scripts import run as studio_runner
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -21,28 +23,35 @@ class ReleaseTests(unittest.TestCase):
         for p in files:
             compile(p.read_text(),str(p),"exec")
 
-    def test_two_self_contained_notebooks(self):
-        for platform in ["Kaggle","Colab"]:
-            nb=ROOT/"notebooks"/f"ACE-Step-Kaggle-Studio-{platform}.ipynb"
-            self.assertTrue(nb.exists(),str(nb))
-            data=json.loads(nb.read_text())
-            self.assertEqual(data["nbformat"],4)
-            self.assertEqual(len(data["cells"]),4)
-            bootstrap="".join(data["cells"][1]["source"])
-            self.assertIn("ARCHIVE",bootstrap)
-            arc_line=bootstrap.split("ARCHIVE",1)[1].split("=",1)[1].splitlines()[0]
-            encoded=ast.literal_eval(arc_line)
-            with ZipFile(BytesIO(base64.b64decode(encoded))) as z:
-                names=set(z.namelist())
-                self.assertIn("studio_tabs.py",names)
-                self.assertIn("studio_smart.py",names)
-                self.assertIn("scripts/run.py",names)
-                self.assertIn("scripts/install.py",names)
-                self.assertIn("requirements.txt",names)
-                self.assertIn("while not stopping",z.read("scripts/run.py").decode())
-            last="".join(data["cells"][-1]["source"])
-            self.assertIn("scripts/run.py",last)
-            self.assertNotIn("Batch",last)
+    def test_notebooks_clonan_github_sin_codigo_embebido(self):
+        repo = "https://github.com/ThowiLabs/ace-step-kaggle-studio.git"
+        for platform, folder in [
+            ("Kaggle", "/kaggle/working/ace-step-kaggle-studio"),
+            ("Colab", "/content/ace-step-kaggle-studio"),
+        ]:
+            nb = ROOT / "notebooks" / f"ACE-Step-Kaggle-Studio-{platform}.ipynb"
+            self.assertTrue(nb.exists(), str(nb))
+            self.assertLess(nb.stat().st_size, 10_000, nb.name)
+            data = json.loads(nb.read_text(encoding="utf-8"))
+            self.assertEqual(data["nbformat"], 4)
+            self.assertEqual(len(data["cells"]), 4)
+            self.assertEqual(data["metadata"]["ace_step_studio_version"], "1.0.5")
+            code = ["".join(cell["source"]) for cell in data["cells"][1:]]
+            for source in code:
+                ast.parse(source)
+            self.assertIn(repo, code[0])
+            self.assertIn(folder, code[0])
+            self.assertIn('"git", "clone"', code[0])
+            self.assertIn('"git", "-C", str(PROJECT), "pull"', code[0])
+            self.assertIn("--ff-only", code[0])
+            self.assertIn("requirements.txt", code[1])
+            self.assertIn("scripts/install.py", code[1])
+            self.assertIn("scripts/run.py", code[2])
+            self.assertNotIn("BASE64", "".join(code).upper())
+            self.assertNotIn("ARCHIVE", "".join(code))
+            self.assertNotIn("zipfile", "".join(code))
+            self.assertNotIn("studio_tabs.py", "".join(code))
+            self.assertNotIn("studio_smart.py", "".join(code))
 
     def test_tabbed_studio_has_seven_modes(self):
         s=(ROOT/"studio_tabs.py").read_text()
@@ -99,6 +108,56 @@ class ReleaseTests(unittest.TestCase):
         self.assertIn("BIN_SHA256",s)
         self.assertIn("sha256(archive)",s)
         self.assertIn("compile_fallback",s)
+
+
+class CudaRuntimeTests(unittest.TestCase):
+    def test_cuda13_detecta_cu13_y_paquetes_separados(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            locations = [
+                base / "site-packages/nvidia/cu13/lib/libcudart.so.13",
+                base / "dist-packages/nvidia/cublas/lib/libcublas.so.13",
+            ]
+            for location in locations:
+                location.parent.mkdir(parents=True, exist_ok=True)
+                location.touch()
+            (base / "site-packages/nvidia/cuda_runtime/lib").mkdir(
+                parents=True, exist_ok=True
+            )
+            (base / "site-packages/nvidia/cuda_runtime/lib/libcudart.so.12").touch()
+            found = studio_runner.cuda_library_dirs(
+                [base / "site-packages", base / "dist-packages"]
+            )
+            self.assertEqual(set(found), {str(p.parent) for p in locations})
+
+    def test_ld_library_path_incluye_cuda_y_rutas_existentes(self):
+        with mock.patch.object(studio_runner, "cuda_library_dirs",
+                               return_value=["/pkg/nvidia/cu13/lib"]):
+            with mock.patch.dict("os.environ", {"LD_LIBRARY_PATH": "/custom/lib"}):
+                env = studio_runner.prepare_env()
+        self.assertIn("/pkg/nvidia/cu13/lib", env["LD_LIBRARY_PATH"].split(":"))
+        self.assertIn("/custom/lib", env["LD_LIBRARY_PATH"].split(":"))
+
+    def test_dependencias_faltantes_generan_error_claro(self):
+        response = subprocess.CompletedProcess(
+            args=[], returncode=0,
+            stdout="libcudart.so.13 => not found\\n", stderr=""
+        )
+        with mock.patch.object(studio_runner.subprocess, "run",
+                               return_value=response):
+            with self.assertRaisesRegex(RuntimeError, "libcudart.so.13"):
+                studio_runner.check_engine_dependencies(
+                    Path("/tmp/ace-server"), {}
+                )
+
+    def test_dependencias_encontradas_permiten_continuar(self):
+        response = subprocess.CompletedProcess(
+            args=[], returncode=0,
+            stdout="libcudart.so.13 => /pkg/libcudart.so.13\\n", stderr=""
+        )
+        with mock.patch.object(studio_runner.subprocess, "run",
+                               return_value=response):
+            studio_runner.check_engine_dependencies(Path("/tmp/ace-server"), {})
 
 
 if __name__=="__main__":

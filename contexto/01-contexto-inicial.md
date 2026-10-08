@@ -10,7 +10,7 @@ Mantener ACE-Step Kaggle Studio como repositorio reproducible para Kaggle y Goog
 - Autor de los commits nuevos: `ThowiLabs`, correo `291061271+ThowiLabs@users.noreply.github.com`.
 - Descargar pesos GGUF durante la instalación; no incluir pesos ni binarios precompilados en Git.
 - Generación y edición musical separadas en siete pestañas; audio de vista previa MP3 128 kbps y descarga WAV completa.
-- Cuadernos autónomos: incluyen los módulos comprimidos y se ejecutan con Run All.
+- Los notebooks Kaggle y Colab obtienen el código mediante `git clone` de `https://github.com/ThowiLabs/ace-step-kaggle-studio` y se ejecutan con Run All. No embeben archivos ni Base64.
 - Interfaz operativa mientras el entorno de ejecución continúe activo; el cierre forzoso del proveedor está fuera del control del proyecto.
 
 # Arquitectura actual

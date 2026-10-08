@@ -5,8 +5,10 @@ import os
 import ctypes
 from pathlib import Path
 import signal
+import site
 import subprocess
 import sys
+import sysconfig
 import time
 import urllib.request
 
@@ -28,6 +30,29 @@ def die_with_parent():
         pass
 
 
+def cuda_library_dirs(roots=None):
+    """Find CUDA 13 pip libraries in site-packages or dist-packages."""
+    if roots is None:
+        roots = [
+            *site.getsitepackages(), site.getusersitepackages(),
+            sysconfig.get_path("purelib"), *sys.path,
+        ]
+    result = []
+    seen = set()
+    for root in roots:
+        if not root:
+            continue
+        nvidia = Path(root) / "nvidia"
+        if not nvidia.is_dir():
+            continue
+        for library in nvidia.rglob("lib*.so.13*"):
+            parent = str(library.parent)
+            if library.is_file() and parent not in seen:
+                seen.add(parent)
+                result.append(parent)
+    return result
+
+
 def prepare_env():
     e = os.environ.copy()
     e["ACE_SERVER_URL"] = SERVER_URL
@@ -37,17 +62,34 @@ def prepare_env():
     e["PYTHONUNBUFFERED"] = "1"
     packaged = ROOT / "runtime" / "build"
     local = ROOT / "runtime" / "acestep-cpp" / "build"
-    runtime13 = (
-        Path(sys.prefix) / "lib" /
-        f"python{sys.version_info.major}.{sys.version_info.minor}" /
-        "site-packages/nvidia/cu13/lib"
-    )
-    paths = [str(p) for p in (packaged, local, runtime13) if p.is_dir()]
+    paths = [str(p) for p in (packaged, local) if p.is_dir()]
+    paths.extend(cuda_library_dirs())
     previous = e.get("LD_LIBRARY_PATH", "")
     if previous:
         paths.append(previous)
-    e["LD_LIBRARY_PATH"] = ":".join(paths)
+    e["LD_LIBRARY_PATH"] = ":".join(dict.fromkeys(paths))
     return e
+
+
+def check_engine_dependencies(executable, env):
+    """Diagnose missing shared libraries before starting the server."""
+    result = subprocess.run(
+        ["ldd", str(executable)], env=env, capture_output=True,
+        text=True, timeout=15,
+    )
+    missing = [line.strip() for line in result.stdout.splitlines()
+               if "not found" in line]
+    if missing:
+        raise RuntimeError(
+            "Faltan bibliotecas para iniciar ace-server:\n"
+            + "\n".join(missing)
+            + "\nEjecuta scripts/install.py e instala las bibliotecas CUDA necesarias."
+        )
+    if result.returncode:
+        raise RuntimeError(
+            "No se pudieron validar las dependencias del motor: "
+            + (result.stderr.strip() or result.stdout.strip())
+        )
 
 def health():
     try:
@@ -67,6 +109,7 @@ def spawn_server(env):
     exe = engine_bin()
     if exe is None:
         raise RuntimeError("Falta ace-server. Ejecuta scripts/install.py primero.")
+    check_engine_dependencies(exe, env)
     logs = ROOT / "logs"
     logs.mkdir(exist_ok=True)
     logfile = logs / "ace-server.log"
@@ -156,7 +199,8 @@ def run():
         # Never signal other notebooks or Lilith services: stop only own children.
         for proc in reversed(children):
             stop_owned(proc)
-        print("[STUDIO] Detenido por el usuario.", flush=True)
+        print("[STUDIO] Detenido por el usuario." if stopping else
+              "[STUDIO] Finalizó el proceso de arranque.", flush=True)
 
 if __name__ == "__main__":
     run()

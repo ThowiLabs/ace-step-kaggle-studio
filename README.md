@@ -30,6 +30,7 @@ Studio de generación musical para **Kaggle y Google Colab**, siete pestañas, G
 - En GPU con controlador antiguo, intenta compilar con el **nvcc** disponible. Esta ruta requiere Git, CMake y CUDA Toolkit y puede tardar mucho; no fue validada aún en cada imagen Colab. Si faltan herramientas muestra un error explícito.
 - Descarga los modelos GGUF de Hugging Face (aproximadamente 13 GB de pesos). Necesita Internet y espacio suficiente.
 - Kaggle/Colab pueden terminar sesiones por límites propios. Ningún notebook puede impedir un cierre impuesto por la plataforma.
+- Desde v1.0.5, el lanzador detecta las rutas de bibliotecas CUDA 13 instaladas por `pip` tanto en `site-packages` como en `dist-packages`, sin depender de una ruta fija. Antes de iniciar `ace-server`, valida las dependencias enlazadas con `ldd` y muestra cuáles faltan en caso de error. No altera bibliotecas ni procesos de otros Studios.
 
 ## Corrección v1.0.1: Cover creativo
 
@@ -67,9 +68,13 @@ El control de referencia de entrada sigue aceptando WAV y MP3: cuando se sube WA
 
 Audios de entrada WAV y MP3 (hasta 150 MB y máximo 10 min); se convierten a WAV de 48 kHz. Empieza probando 10–30 segundos para edición. La autoduración de canciones usa duración 0 para pedir al LM que decida; el máximo técnico es 600 segundos, sin garantía de precisión exacta.
 
-## Notebook autónomo y ejecución local
+## Cuadernos Kaggle y Google Colab
 
-Los notebooks **incluyen su código fuente comprimido**: no necesitan que GitHub esté conectado o que el repositorio se haya publicado previamente.
+Los dos notebooks son ligeros y descargan el código directamente de [ThowiLabs/ace-step-kaggle-studio](https://github.com/ThowiLabs/ace-step-kaggle-studio) con `git clone --depth 1 --branch main`. No llevan archivos incrustados ni Base64.
+
+Al volver a ejecutar una sesión, el notebook puede actualizar un clon existente con `git pull --ff-only` si su origen coincide. Si ya existe otra carpeta con el mismo nombre, se detiene con un error claro en lugar de sobrescribirla. El entorno necesita acceso a Internet y GPU NVIDIA.
+
+La última celda inicia Gradio y permanece ejecutándose hasta que se detenga manualmente o finalice el entorno de Kaggle o Colab.
 
 Desde un clon local también se ejecuta con estos tres comandos:
 
@@ -91,18 +96,18 @@ Las pruebas técnicas comprueban que el audio tenga señal válida, pero no aseg
 ## Versionado y mantenimiento
 
 - Rama estable: `main`.
-- Versión actual: `v1.0.3`.
+- Versión actual: `v1.0.5` (detección de librerías CUDA y notebooks GitHub).
 - Responsable del mantenimiento: [ThowiLabs](https://github.com/ThowiLabs).
 - Los commits nuevos se escriben en español con encabezados `Summary:` y `Description:`.
 - Los cambios relevantes se documentan en `contexto/` y en los archivos numerados de `tareas/`.
 - La distribución completa ZIP incluye el historial Git, no solamente los archivos fuente.
-- Estado de publicación: repositorio local versionado; la sincronización con GitHub requiere autorización de la cuenta.
+- Repositorio público: [ThowiLabs/ace-step-kaggle-studio](https://github.com/ThowiLabs/ace-step-kaggle-studio). Cada versión local se publica mediante un push de `main` y su tag correspondiente.
 
 Para revisar versiones o regresar a un punto conocido:
 
     git log --oneline --decorate
     git tag --list
-    git switch --detach v1.0.3
+    git switch --detach v1.0.4
 
 Para volver a trabajar en la rama:
 
