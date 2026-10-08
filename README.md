@@ -1,8 +1,8 @@
 # ACE-Step Kaggle Studio
 
-Studio de música IA para **Kaggle y Google Colab**, siete pestañas, Gradio público y ACE-Step 1.5 GGUF. Proyecto comunitario **no oficial**.
+Studio de generación musical para **Kaggle y Google Colab**, siete pestañas, Gradio público y ACE-Step 1.5 GGUF. Proyecto comunitario **no oficial**.
 
-## Funciona como pediste
+## Ejecución
 
 **Run All instala, abre Gradio y NO finaliza automáticamente.** La última celda permanece activa hasta que pulses Stop/Interrupt o la plataforma cierre el runtime. Si el motor o Gradio se cierran por error, el lanzador intentará reiniciarlos sin matar otros servicios del sistema.
 
@@ -88,9 +88,29 @@ Pruebas:
 
 Las pruebas técnicas comprueban que el audio tenga señal válida, pero no aseguran la calidad artística ni que toda la letra sea interpretada. Los loops de códigos LM son un problema conocido: se detectan secuencias degeneradas y se hacen reintentos, sin garantía absoluta.
 
+## Versionado y mantenimiento
+
+- Rama estable: `main`.
+- Versión actual: `v1.0.3`.
+- Responsable del mantenimiento: [ThowiLabs](https://github.com/ThowiLabs).
+- Los commits nuevos se escriben en español con encabezados `Summary:` y `Description:`.
+- Los cambios relevantes se documentan en `contexto/` y en los archivos numerados de `tareas/`.
+- La distribución completa ZIP incluye el historial Git, no solamente los archivos fuente.
+- Estado de publicación: repositorio local versionado; la sincronización con GitHub requiere autorización de la cuenta.
+
+Para revisar versiones o regresar a un punto conocido:
+
+    git log --oneline --decorate
+    git tag --list
+    git switch --detach v1.0.3
+
+Para volver a trabajar en la rama:
+
+    git switch main
+
 ## Créditos y uso
 
-Proyecto comunitario no oficial; sin afiliación a los autores ni a Kaggle/Colab.
+Mantenimiento: [ThowiLabs](https://github.com/ThowiLabs). Proyecto comunitario no oficial, sin afiliación a los autores de los motores ni a Kaggle/Colab.
 
 - ACE-Step 1.5: https://github.com/ace-step/ACE-Step-1.5
 - acestep.cpp: https://github.com/ServeurpersoCom/acestep.cpp

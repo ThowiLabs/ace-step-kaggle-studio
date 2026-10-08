@@ -122,7 +122,7 @@ subprocess.run(
             "language_info": {"name": "python"},
             "accelerator": "GPU",
             "ace_step_platform": platform,
-            "ace_step_studio_version": "1.0.2",
+            "ace_step_studio_version": "1.0.3",
         },
         "nbformat": 4,
         "nbformat_minor": 5,

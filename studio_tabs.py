@@ -248,7 +248,7 @@ def bind(button,callback,inputs,outputs):
 
 with gr.Blocks(title="ACE-Step XL Q8 | Studio multipestaña") as app:
     gr.Markdown("# 🎶 ACE-Step 1.5 · Music Studio")
-    gr.Markdown("**En todos los modos:** escucha una **vista previa MP3 comprimida (128 kbps)** y, si quieres calidad original, descarga el **WAV completo** por separado. La compresión no altera el audio generado por la IA.")
+    gr.Markdown("**En todos los modos:** escucha una **vista previa MP3 comprimida (128 kbps)** y, si quieres calidad original, descarga el **WAV completo** por separado. La compresión no altera el audio original del modelo.")
     gr.Markdown(
         "Generación con **XL Turbo Q8**, edición con **audio de referencia**, "
         "y herramientas de pistas con **Base Q8**. Cada modo usa su propia pestaña. "
@@ -258,14 +258,14 @@ with gr.Blocks(title="ACE-Step XL Q8 | Studio multipestaña") as app:
         with gr.Tab("🎵 Crear canción"):
             gr.Markdown(
                 "Este modo conserva **autoduración, hasta 3 reintentos automáticos y "
-                "protección anti-loops**. La IA decide cuánto debe durar según la letra."
+                "protección anti-loops**. El modelo decide cuánto debe durar según la letra."
             )
             with gr.Row():
                 with gr.Column():
                     s1=gr.Textbox(label="Style",lines=5,value="Classic Colombian orchestral salsa, powerful brass, piano montuno, tumbao bass, congas, trombones, male Spanish singer, professional recording")
                     l1=gr.Textbox(label="Lyrics",lines=9,value="[Verse]\nLa vida cambia cuando vuelves a bailar.\n[Chorus]\nQue suenen los metales, la noche va a empezar.")
                     with gr.Row():
-                        bpm=gr.Slider(0,200,value=0,step=1,label="BPM (0 = IA)")
+                        bpm=gr.Slider(0,200,value=0,step=1,label="BPM (0 = automático)")
                         language=gr.Dropdown(["es","en","pt","fr","de"],value="es",label="Idioma")
                     tries=gr.Slider(1,4,step=1,value=3,label="Intentos anti-loop")
                     rescue=gr.Checkbox(value=True,label="Rescatar con XL directo si colapsa el LM")

@@ -61,6 +61,31 @@ class ReleaseTests(unittest.TestCase):
         self.assertNotIn("killall",s)
         self.assertNotIn("max_runtime_seconds",s)
 
+    def test_contexto_y_tareas_ponytail(self):
+        contexto=ROOT/"contexto"
+        tareas=ROOT/"tareas"
+        self.assertTrue(contexto.is_dir())
+        self.assertTrue(tareas.is_dir())
+        archivos=list(contexto.glob("[0-9][0-9]-*.md"))
+        self.assertGreaterEqual(len(archivos),2)
+        for archivo in archivos:
+            source=archivo.read_text(encoding="utf-8")
+            for heading in (
+                "# Fecha", "# Objetivo", "# Decisiones tomadas",
+                "# Arquitectura actual", "# Librerías usadas",
+                "# Archivos importantes modificados", "# Problemas encontrados",
+                "# Soluciones implementadas", "# Pendientes", "# Próximos pasos",
+            ):
+                self.assertIn(heading,source,archivo.name)
+        tasks=list(tareas.glob("*.md"))
+        self.assertGreaterEqual(len(tasks),4)
+        self.assertLessEqual(sum("en-proceso-" in f.name for f in tasks),1)
+        self.assertTrue(all(
+            "-completado-" in f.name or "-pendiente-" in f.name
+            or "-en-proceso-" in f.name for f in tasks
+        ))
+        self.assertTrue((ROOT/".gitignore").exists())
+
     def test_downloads_required_models_and_checksum(self):
         s=(ROOT/"scripts/install.py").read_text()
         for name in [

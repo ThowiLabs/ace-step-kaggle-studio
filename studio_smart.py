@@ -87,7 +87,7 @@ def make(style,lyrics,bpm,language,tries,rescue,progress=gr.Progress()):
                 "lm_top_p":top_p,
                 "lm_top_k":0,
             }
-            progress(idx/max_tries*.7,desc=f"Composición IA intento {idx+1}/{max_tries}")
+            progress(idx/max_tries*.7,desc=f"Composición: intento {idx+1}/{max_tries}")
             try:
                 plans=engine.request_job("/lm",payload,progress).json()
                 if not isinstance(plans,list) or not plans:
@@ -146,7 +146,7 @@ def make(style,lyrics,bpm,language,tries,rescue,progress=gr.Progress()):
             dcw_scaler=0.,
             dcw_high_scaler=0.,
         )
-        progress(.8,desc=f"Sintetizando {mode}, duración IA {duration:.0f}s")
+        progress(.8,desc=f"Sintetizando {mode}, duración seleccionada {duration:.0f}s")
         result=engine.request_job("/synth",best,progress)
         raw=engine.get_wav(result)
         target=OUT/("XL_AUTO_"+uuid.uuid4().hex[:9]+".wav")
@@ -174,7 +174,7 @@ def make(style,lyrics,bpm,language,tries,rescue,progress=gr.Progress()):
             json.dumps(diagnosis,ensure_ascii=False,indent=2),encoding="utf-8"
         )
         summary=(
-            f"Audio OK: {actual:.1f}s a {sr}Hz; IA eligió {duration:.0f}s.\n"
+            f"Audio OK: {actual:.1f}s a {sr}Hz; el modelo eligió {duration:.0f}s.\n"
             f"{mode}. Intentos LM: {len(trials)}.\n"
             + " | ".join(
                 f"#{x['attempt']} racha {x.get('longest_run','error')}"
@@ -189,7 +189,7 @@ def make(style,lyrics,bpm,language,tries,rescue,progress=gr.Progress()):
 with gr.Blocks(title="ACE-Step XL Q8 - Auto-duración Anti-Loops") as app:
     gr.Markdown("# ACE-Step XL Q8 · Canciones inteligentes")
     gr.Markdown(
-        "Duración elegida por la IA según tu Style y Lyrics. "
+        "Duración elegida automáticamente a partir de Style y Lyrics. "
         "Sin selector artificial de 180 segundos. "
         "Límite del modelo: 10 a 600 segundos. "
         "Corrección automática de planes LM degenerados."
@@ -208,7 +208,7 @@ with gr.Blocks(title="ACE-Step XL Q8 - Auto-duración Anti-Loops") as app:
                        "[Chorus]\nQue suenen los metales,\nque baile mi canción.")
             )
             with gr.Row():
-                bpm=gr.Slider(0,200,value=0,step=1,label="BPM · 0 = IA elige")
+                bpm=gr.Slider(0,200,value=0,step=1,label="BPM · 0 = automático")
                 lang=gr.Dropdown(["es","en","pt","fr","de"],value="es",label="Idioma")
             with gr.Accordion("Protección contra loops",open=True):
                 tries=gr.Slider(1,4,value=3,step=1,label="Máximo de intentos automáticos LM")
