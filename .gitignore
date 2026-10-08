@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Runtime assets: downloaded by install.py
+models
+models/
+runtime
+runtime/
+logs/
+outputs/
+studio_outputs/
+.gradio/
+.cache/
+
+# Local configuration
+.env
+.env.*
+*.log
+.DS_Store

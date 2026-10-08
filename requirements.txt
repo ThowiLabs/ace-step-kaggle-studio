@@ -1,0 +1,6 @@
+gradio==6.2.0
+requests>=2.31,<3
+numpy>=1.26,<3
+soundfile>=0.12
+huggingface-hub>=0.30,<2
+hf-xet>=1.1
